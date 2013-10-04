@@ -27,7 +27,7 @@ class DefaultCommand extends Command
     {
         $this
             ->setName('gitboard')
-            ->setDescription('Say hello')
+            ->setDescription('Simple dashboard for a quick overview of Git projects.')
         ;
 
         //$this->target = $_SERVER['PWD'];
@@ -53,29 +53,7 @@ class DefaultCommand extends Command
         // TOOD try/catch with exception
         $this->branch = $this->getCurrentBranch();
 
-        // TODO move to function
-        $this->table
-            /** defaults to TableHelper::LAYOUT_DEFAULT , LAYOUT_COMPACT */
-            /** @see https://github.com/symfony/symfony/blob/master/src/Symfony/Component/Console/Helper/TableHelper.php#L24 */
-            // TODO make static call, include use statement
-            ->setLayout(TableHelper::LAYOUT_COMPACT)
-            ->addRow(array(
-                // todo simple format
-                $this->formatter->formatBlock('project', 'info'),
-                $this->target,
-            ))
-            ->addRow(array(
-                $this->formatter->formatBlock('current branch', 'info'),
-                $this->branch,
-            ))
-            ->addRow(array(
-                $this->formatter->formatBlock('current date', 'info'),
-                date('d/m/Y H:i:s'),
-            ))
-        ;
-        $this->table->render($output);
-
-        $this->table->setRows(array());
+        $this->renderHeader();
 
         $this->output->writeln('');
         $this->output->writeln('');
@@ -114,6 +92,35 @@ class DefaultCommand extends Command
         }
 
         $this->table->render($output);
+
+    }
+
+    protected function renderHeader()
+    {
+            // TODO move to function
+        $this->table
+            /** defaults to TableHelper::LAYOUT_DEFAULT , LAYOUT_COMPACT */
+            /** @see https://github.com/symfony/symfony/blob/master/src/Symfony/Component/Console/Helper/TableHelper.php#L24 */
+            // TODO make static call, include use statement
+            ->setLayout(TableHelper::LAYOUT_COMPACT)
+            ->addRow(array(
+                // todo simple format
+                $this->formatter->formatBlock('project', 'info'),
+                $this->target,
+            ))
+            ->addRow(array(
+                $this->formatter->formatBlock('current branch', 'info'),
+                $this->branch,
+            ))
+            ->addRow(array(
+                $this->formatter->formatBlock('current date', 'info'),
+                date('d/m/Y H:i:s'),
+            ))
+        ;
+        $this->table->render($this->output);
+
+        // TODO create clearTable function
+        $this->table->setRows(array());
 
     }
 
