@@ -5,6 +5,7 @@ namespace Gitboard\Console\Command;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Helper\TableHelper;
 
 class DefaultCommand extends Command
 {
@@ -14,6 +15,13 @@ class DefaultCommand extends Command
 
     protected $commits;
 
+    protected $input;
+
+    protected $output;
+
+    protected $formatter;
+
+    protected $table;
 
     protected function configure()
     {
@@ -24,44 +32,60 @@ class DefaultCommand extends Command
 
         //$this->target = $_SERVER['PWD'];
         $this->target = getcwd();
-        $this->branch = $this->getCurrentBranch();
-        // TODO make configurable
-        $this->commits = $this->getCommits(40);
+
+        // 
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        //$output->writeln($this->target . '\.git');
+        // make input/output accessible by local functions
+        $this->input = $input;
+        $this->output = $output;
+
+        // setup helpersets
+        $helperSet = $this->getHelperSet();
+        $this->formatter = $helperSet->get('formatter');
+        $this->table = $helperSet->get('table');
+
+        // TODO only on platforms where available
         $this->clearScreen();
 
-        $formatter = $this->getHelperSet()->get('formatter');
-        $table = $this->getHelperSet()->get('table');
+        // TOOD try/catch with exception
+        $this->branch = $this->getCurrentBranch();
 
-        $table
+        // TODO move to function
+        $this->table
             /** defaults to TableHelper::LAYOUT_DEFAULT , LAYOUT_COMPACT */
             /** @see https://github.com/symfony/symfony/blob/master/src/Symfony/Component/Console/Helper/TableHelper.php#L24 */
-            ->setLayout($table::LAYOUT_COMPACT)
+            // TODO make static call, include use statement
+            ->setLayout(TableHelper::LAYOUT_COMPACT)
             ->addRow(array(
                 // todo simple format
-                $formatter->formatBlock('project', 'info'),
+                $this->formatter->formatBlock('project', 'info'),
                 $this->target,
             ))
             ->addRow(array(
-                $formatter->formatBlock('current branch', 'info'),
+                $this->formatter->formatBlock('current branch', 'info'),
                 $this->branch,
             ))
             ->addRow(array(
-                $formatter->formatBlock('current date', 'info'),
+                $this->formatter->formatBlock('current date', 'info'),
                 date('d/m/Y H:i:s'),
             ))
         ;
-        $table->render($output);
+        $this->table->render($output);
 
-        $table->setRows(array());
-        $output->writeln('');
-        $output->writeln('');
+        $this->table->setRows(array());
 
-        $table->setHeaders(array(
+        $this->output->writeln('');
+        $this->output->writeln('');
+
+        // TODO make configurable
+        $this->commits = $this->getCommits(40);
+
+        // TODO check if there are commits -> render message if not
+
+        $this->table->setHeaders(array(
             'date','name','hash','message','files'
         ));
 
@@ -83,39 +107,47 @@ class DefaultCommand extends Command
             $message = substr($this->commits[$i]['message'],0,6);
             $files = count($this->commits[$i]['files']);
 
-            $table->addRow(array(
+            $this->table->addRow(array(
                 $date,$name,$hash,$message,$files,
             ));
 
         }
 
-        $table->render($output);
+        $this->table->render($output);
 
     }
 
     // TODO move to provider
     protected function getCurrentBranch()
     {
-        // doesn't matter if / or \.git on cygwin
-        // TODO replace with git command
+        $cmd = sprintf("git --git-dir=%s/.git branch --no-color 2>&1", $this->target);
 
-        /*
-        if (substr(php_uname(), 0, 7) == "Windows"){ 
-            pclose(popen("start /B ". $cmd, "r"));  
-        } 
-        else { 
-            exec($cmd . " 2>/dev/null");   
-        } 
-        */
+        $this->output->writeln('executing: ' . $cmd);
+        $this->output->writeln('');
 
+        // TODO use symfony/process
+        // read lines into branch array
+        $outputArray = explode("\n", exec($cmd));
 
-        $cmd = sprintf("git --git-dir=%s\.git branch | grep \* | sed 's/* //g'", $this->target);
-        exec($cmd . " 2>/dev/null", $branch);
-        if(count($branch)==0)
+        // filter lines beginning with "* " aka the branches
+        $outputArray = preg_grep("/\* /", $outputArray);
+
+        // strip "* " from the beginning of branch
+        array_walk($outputArray, function(&$value, $key){
+            $value = substr($value, 2);
+        });
+
+        if(count($outputArray) === 0)
         {
-            exit('No brancheee selected in ' . $this->target);
+            // TODO configure exit quietly / verbose with different messages
+            // - not a git repository
+            // - no branch checked out?
+            $this->output->writeln(
+                $this->formatter->formatSection('Info','No branch selected in ' . $this->target . PHP_EOL, 'info')
+            );
+            exit();
         }
-        return $branch[0];
+        return $outputArray[0];
     }
 
     protected function clearScreen()
@@ -125,7 +157,8 @@ class DefaultCommand extends Command
             // TODO warn on verbose that clearing screen is not supported
             // TODO check for cygwin/msys
         } 
-        passthru("tput clear");
+        //passthru("tput clear");
+
         // ncurses_clear() ?
     }
 
