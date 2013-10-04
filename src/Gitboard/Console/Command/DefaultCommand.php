@@ -98,11 +98,22 @@ class DefaultCommand extends Command
     {
         // doesn't matter if / or \.git on cygwin
         // TODO replace with git command
+
+        /*
+        if (substr(php_uname(), 0, 7) == "Windows"){ 
+            pclose(popen("start /B ". $cmd, "r"));  
+        } 
+        else { 
+            exec($cmd . " 2>/dev/null");   
+        } 
+        */
+
+
         $cmd = sprintf("git --git-dir=%s\.git branch | grep \* | sed 's/* //g'", $this->target);
-        exec($cmd, $branch);
+        exec($cmd . " 2>/dev/null", $branch);
         if(count($branch)==0)
         {
-            exit('No branch selected in ' . $this->target);
+            exit('No brancheee selected in ' . $this->target);
         }
         return $branch[0];
     }

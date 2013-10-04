@@ -56,6 +56,6 @@ if (function_exists('ini_set')) {
     unset($memoryInBytes, $memoryLimit);
 }
 
-// run the command application
+// run the console application
 $application = new Application('Gitboard Avanced', '0.0.1');
 $application->run();
