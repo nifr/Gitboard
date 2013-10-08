@@ -129,6 +129,7 @@ class DefaultCommand extends Command
     {
         $cmd = sprintf("git --git-dir=%s/.git branch --no-color 2>&1", $this->target);
 
+        // TODO use verbosity options to output command information
         $this->output->writeln('executing: ' . $cmd);
         $this->output->writeln('');
 
@@ -160,12 +161,13 @@ class DefaultCommand extends Command
     protected function clearScreen()
     {
         //passthru("tput clear");
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        //if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             // TODO warn on verbose that clearing screen is not supported
-            // TODO check for cygwin/msys
-        } 
-        //passthru("tput clear");
+        //} 
+        // TODO check for cygwin/msys
+        passthru("tput clear");
 
+        // TODO check wether this works on windows?
         // ncurses_clear() ?
     }
 
@@ -174,41 +176,35 @@ class DefaultCommand extends Command
     {
         $separator = '°';
         $from = date('Y-m-d 00:00:00', strtotime(sprintf("-%s days", $nbDays - 1)));
-        // TODO replace with git command
+
+        // TODO configurable git command
+        // TODO move to symfony/process
         $cmd = sprintf('git --git-dir=%s/.git log --no-merges --ignore-all-space --since="%s" --format="%%ci%s%%ce%s%%cn%s%%h%s%%s" --numstat', $this->target, $from, $separator, $separator, $separator, $separator);
         exec($cmd, $results);
 
-        $commits = array();
-        $commit = array();
-        foreach($results as $line)
-        {
-            if(strlen($line) == 0)
-            {
-                continue;
-            }
-            if(strpos($line, $separator) !== false)
-            {
-                if(count($commit) > 0)
-                {
-                    $commits[] = $commit;
-                }
-                $commit = $this->getCommitFromLine($line, $separator);
-            }
-            else
-            {
-                $elements = preg_split("/[\s]+/", $line, null, PREG_SPLIT_NO_EMPTY);
-                $commit['files'][] = array(
-                    'add' => $elements[0],
-                    'delete' => $elements[1],
-                    'file' => $elements[2],
-                );
-            }
-        }
+        // remove empty lines
+        $results = array_filter($results);
 
-        if(count($commit) > 0)
-        {
-            $commits[] = $commit;
-        }
+        $commits = array();
+
+        $i=0;
+
+        array_walk($results, function($line) use ($separator,&$commits,&$i) {
+            if (strpos($line, $separator) !== false) {
+                $commits[] = $this->getCommitFromLine($line, $separator);
+                $i++;
+            }
+            else {
+                if ($i > 0) {
+                    $elements = preg_split("/[\s]+/", $line, null, PREG_SPLIT_NO_EMPTY);
+                    $commits[($i-1)]['files'][] = array(
+                        'add' => $elements[0],
+                        'delete' => $elements[1],
+                        'file' => $elements[2],
+                    );
+                }
+            }
+        });
 
         return $commits;
     }
