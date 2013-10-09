@@ -59,40 +59,9 @@ class DefaultCommand extends Command
         $this->output->writeln('');
 
         // TODO make configurable
-        $this->commits = $this->getCommits(40);
+        $this->getCommits(40, $this->commits);
 
-        // TODO check if there are commits -> render message if not
-
-        $this->table->setHeaders(array(
-            'date','name','hash','message','files'
-        ));
-
-        for($i = 0; $i < count($this->commits); $i++)
-        {
-            if(!isset($this->commits[$i])) continue;
-            /*
-            displayValue($converter, date('d/m/y H\hi', strtotime($commits[$i]['date'])), 17, "0;33", false, date('d/m/y'));
-            displayValue($converter, limitText($commits[$i]['name'], 16), 17);
-            displayValue($converter, $commits[$i]['hash'], 8);
-            displayValue($converter, limitText($commits[$i]['message'], 70), 71, "0;36");
-            displayValue($converter, count($commits[$i]['files']), 9);
-            outputf($converter, "\n");
-            */
-            $date = date('d/m/y H\hi', strtotime($this->commits[$i]['date']));
-            // @nico Important - strip non-ansii characters
-            $name = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $this->commits[$i]['name']);
-            $hash = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $this->commits[$i]['hash']);
-            $message = substr($this->commits[$i]['message'],0,6);
-            $files = count($this->commits[$i]['files']);
-
-            $this->table->addRow(array(
-                $date,$name,$hash,$message,$files,
-            ));
-
-        }
-
-        $this->table->render($output);
-
+        $this->renderCommits();
     }
 
     protected function renderHeader()
@@ -121,7 +90,30 @@ class DefaultCommand extends Command
 
         // TODO create clearTable function
         $this->table->setRows(array());
+    }
 
+    // TODO introduce render-limit
+    protected function renderCommits()
+    {
+        // TODO check if there are commits -> render message if not
+
+        $this->table->setHeaders(array(
+            'date','name','hash','message','files'
+        ));
+
+        // TODO introduce render-limit
+        for($i = 0; $i < count($this->commits); $i++)
+        {
+            $this->table->addRow(array(
+                date('d/m/y H\hi', strtotime($this->commits[$i]['date'])),
+                $this->commits[$i]['name'],
+                $this->commits[$i]['hash'],
+                substr($this->commits[$i]['message'],0,6),
+                count($this->commits[$i]['files']),
+            ));
+
+        }
+        $this->table->render($this->output);
     }
 
     // TODO move to provider
@@ -132,7 +124,9 @@ class DefaultCommand extends Command
 
         // TODO move to function / use AOP for verbosity somehow?
         if (OutputInterface::VERBOSITY_VERBOSE <= $this->output->getVerbosity()) {
-            $this->formatter->formatSection('DEBUG','executing: ' . $cmd . PHP_EOL, 'info');
+            $this->output->writeln(
+                $this->formatter->formatSection('DEBUG','executing: ' . $cmd . PHP_EOL, 'info')
+            );
         }
         
 
@@ -182,10 +176,13 @@ class DefaultCommand extends Command
 
         // TODO configurable git command
         // TODO move to symfony/process
-        $cmd = sprintf('git --git-dir=%s/.git log --no-merges --ignore-all-space --since="%s" --format="%%ci%s%%ce%s%%cn%s%%h%s%%s" --numstat', $this->target, $from, $separator, $separator, $separator, $separator);
+        $cmd = sprintf('git --git-dir=%s/.git log --no-color --no-merges --ignore-all-space --since="%s" --format="%%ci%s%%ce%s%%cn%s%%h%s%%s" --numstat', $this->target, $from, $separator, $separator, $separator, $separator);
+        //--format="%ci_%ce_%cn_%h__"
         
         if (OutputInterface::VERBOSITY_VERBOSE <= $this->output->getVerbosity()) {
-            $this->formatter->formatSection('DEBUG','executing: ' . $cmd . PHP_EOL, 'info');
+            $this->output->writeln(
+                $this->formatter->formatSection('DEBUG','executing: ' . $cmd . PHP_EOL, 'info')
+            );
         }
 
         exec($cmd, $results);
@@ -193,9 +190,8 @@ class DefaultCommand extends Command
         // remove empty lines
         $results = array_filter($results);
 
-        $commits = array();
-
         $i=0;
+        $commits = array();
 
         array_walk($results, function($line) use ($separator,&$commits,&$i) {
             if (strpos($line, $separator) !== false) {
@@ -206,15 +202,24 @@ class DefaultCommand extends Command
                 if ($i > 0) {
                     $elements = preg_split("/[\s]+/", $line, null, PREG_SPLIT_NO_EMPTY);
                     $commits[($i-1)]['files'][] = array(
-                        'add' => $elements[0],
+                        'add'    => $elements[0],
                         'delete' => $elements[1],
-                        'file' => $elements[2],
+                        'file'   => $elements[2],
                     );
                 }
             }
         });
 
-        return $commits;
+        // important - strip non ascii characters from output ( added by @nifr )
+        array_walk_recursive(
+            $commits, 
+            (function(&$value) {
+                $value = preg_replace('/[\x00-\x1F\x80-\xFF]/', '', $value);
+            })
+        );
+
+        $this->commits = $commits;
+
     }
 
     protected function getCommitFromLine($line, $separator)
