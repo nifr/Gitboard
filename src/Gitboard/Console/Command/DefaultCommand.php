@@ -127,11 +127,14 @@ class DefaultCommand extends Command
     // TODO move to provider
     protected function getCurrentBranch()
     {
+        // TODO use better branch function
         $cmd = sprintf("git --git-dir=%s/.git branch --no-color 2>&1", $this->target);
 
-        // TODO use verbosity options to output command information
-        $this->output->writeln('executing: ' . $cmd);
-        $this->output->writeln('');
+        // TODO move to function / use AOP for verbosity somehow?
+        if (OutputInterface::VERBOSITY_VERBOSE <= $this->output->getVerbosity()) {
+            $this->formatter->formatSection('DEBUG','executing: ' . $cmd . PHP_EOL, 'info');
+        }
+        
 
         // TODO use symfony/process
         // read lines into branch array
@@ -180,6 +183,11 @@ class DefaultCommand extends Command
         // TODO configurable git command
         // TODO move to symfony/process
         $cmd = sprintf('git --git-dir=%s/.git log --no-merges --ignore-all-space --since="%s" --format="%%ci%s%%ce%s%%cn%s%%h%s%%s" --numstat', $this->target, $from, $separator, $separator, $separator, $separator);
+        
+        if (OutputInterface::VERBOSITY_VERBOSE <= $this->output->getVerbosity()) {
+            $this->formatter->formatSection('DEBUG','executing: ' . $cmd . PHP_EOL, 'info');
+        }
+
         exec($cmd, $results);
 
         // remove empty lines
