@@ -85,6 +85,11 @@ class TestCommand extends Command
 
         $output->writeln($block);
 
+        // FORMAT single line 
+        $this->output->writeln(
+            $this->formatter->formatBlock('test', 'bg=yellow')
+        );
+
         $formattedBlock = $formatter->formatBlock($block, 'question', true);
         $output->writeln($formattedBlock);
 
