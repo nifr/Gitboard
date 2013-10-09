@@ -8,29 +8,37 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\TableHelper;
 
+// TODO include current state ( dirty / clean - files modified / deleted / created ) - git status --porcelain
+// TODO include option to show ignored files 
+// TODO include option to show deleted files
+// TODO
 class DefaultCommand extends Command
 {
     protected $target;
 
     protected $branch;
 
-    protected $commits;
+    protected $commits = array();
+
+    protected $stats = array();
 
     protected $input;
 
     protected $output;
 
+    // TODO investigate getHelper()
     protected $formatter;
 
+    // TODO investigate getHelper()
     protected $table;
 
     protected $options = array();
 
-    private static $logo = "   ____ _ _   _                         _ 
-  / ___(_) |_| |__   ___   __ _ _ __ __| |
- | |  _| | __| '_ \ / _ \ / _` | '__/ _` |
- | |_| | | |_| |_) | (_) | (_| | | | (_| |
-  \____|_|\__|_.__/ \___/ \__,_|_|  \__,_|
+private static $logo = "  ____ _ _   _                         _  
+  / ___(_) |_| |__   ___   __ _ _ __ __| | 
+ | |  _| | __| '_ \ / _ \ / _` | '__/ _` | 
+ | |_| | | |_| |_) | (_) | (_| | | | (_| | 
+  \____|_|\__|_.__/ \___/ \__,_|_|  \__,_| 
                                           ";
 
     public function getHelp()
@@ -75,11 +83,8 @@ class DefaultCommand extends Command
                 //    throw new \Exception('The required option can only be "true", "false" or empty.');
                 //}
                 break;
-            case 1:
-                echo "i equals 1";
-                break;
-            case 2:
-                echo "i equals 2";
+            case 'clear':
+                //
                 break;
         }
     }
@@ -101,25 +106,33 @@ class DefaultCommand extends Command
         $this->importOptions();
 
         // setup helpersets
+        // TODO getHelper() - https://github.com/symfony/symfony/blob/master/src/Symfony/Component/Console/Command/Command.php
         $helperSet = $this->getHelperSet();
         $this->formatter = $helperSet->get('formatter');
         $this->table = $helperSet->get('table');
 
-        // TODO only on platforms where available
-        $this->clearScreen();
-
         // TOOD try/catch with exception
         $this->branch = $this->getCurrentBranch();
-
-        $this->renderHeader();
-
-        $this->output->writeln('');
-        $this->output->writeln('');
 
         // TODO make configurable
         $this->getCommits(40, $this->commits);
 
+        $this->getStats($this->commits, $this->stats);
+
+        // RENDERING
+        $this->clearScreen();
+        $this->renderLogo();
+        $this->renderHeader();
         $this->renderCommits();
+        $this->renderStats($this->stats, $this->table);
+    }
+
+    protected function renderLogo()
+    {
+        $this->output->writeln(
+            $this->formatter->formatBlock($this::$logo, 'fg=blue')
+        );
+        $this->output->writeln('');
     }
 
     protected function renderHeader()
@@ -145,9 +158,9 @@ class DefaultCommand extends Command
             ))
         ;
         $this->table->render($this->output);
+        $this->output->writeln('');
 
-        // TODO create clearTable function
-        $this->table->setRows(array());
+        $this->clearTable($this->table);
     }
 
     // TODO introduce render-limit
@@ -172,6 +185,44 @@ class DefaultCommand extends Command
 
         }
         $this->table->render($this->output);
+        $this->output->writeln('');
+
+        $this->clearTable($this->table);
+    }
+
+    protected function clearTable($table)
+    {
+        $table->setHeaders(array());
+        $table->setRows(array());
+    }
+
+    // TODO typehint table
+    // TODO get table helper directly from output?
+    protected function renderStats(array $stats, $table)
+    {
+        // TODO check if no commits
+        $table->setHeaders(array(
+            'name',
+            'commits',
+            '%',
+            'files',
+            '%',
+        ));
+
+        array_walk($stats, (function($stat) use (&$table) {
+            $table->addRow(array(
+                $stat['name'],
+                $stat['totalCommits'],
+                $stat['percentCommits'],
+                $stat['totalFiles'],
+                $stat['percentFiles'],
+            ));
+        }));
+
+        $table->render($this->output);
+        $this->output->writeln('');
+
+        $this->clearTable($table);
     }
 
     // TODO move to provider
@@ -278,6 +329,7 @@ class DefaultCommand extends Command
         });
 
         // important - strip non ascii characters from output ( added by @nifr )
+        // same as this? https://github.com/KuiKui/Gitboard/blob/master/gitboard.php#L380
         array_walk_recursive(
             $commits,
             (function(&$value) {
@@ -288,19 +340,57 @@ class DefaultCommand extends Command
         $this->commits = $commits;
     }
 
+    // TODO move to provider
     protected function getCommitFromLine($line, $separator)
     {
         $elements = explode($separator, $line);
+
         $commit = array(
-            'date' => $elements[0],
+            'date'          => $elements[0],
             'date_relative' => $elements[1],
-            'email' => $elements[2],
-            'name' => $elements[3],
-            'hash' => $elements[4],
-            'message' => $elements[5],
-            'files' => array()
+            'email'         => $elements[2],
+            'name'          => $elements[3],
+            'hash'          => $elements[4],
+            'message'       => $elements[5],
+            'files'         => array()
         );
 
         return $commit;
+    }
+
+    // TODO refactor - source https://github.com/KuiKui/Gitboard/blob/master/gitboard.php#L279
+    protected function getStats(array $commits, &$stats = array())
+    {
+        $stats = array();
+        $nbCommits = 0;
+        $nbFiles = 0;
+
+        foreach($commits as $commit)
+        {
+            if(!isset($stats[$commit['email']]))
+            {
+                $stats[$commit['email']] = array(
+                    'name'           => $commit['name'],
+                    'totalCommits'   => 0,
+                    'percentCommits' => 0,
+                    'totalFiles'     => 0,
+                    'percentFiles'   => 0
+                );
+            }
+
+            $stats[$commit['email']]['name'] = $commit['name'];
+            $stats[$commit['email']]['totalCommits'] += 1;
+            $stats[$commit['email']]['totalFiles'] += count($commit['files']);
+            $nbCommits++;
+            $nbFiles += count($commit['files']);
+        }
+
+        foreach($stats as $key => $stat)
+        {
+            $stats[$key]['percentCommits'] = round($stat['totalCommits'] * 100 / $nbCommits);
+            $stats[$key]['percentFiles']   = round($stat['totalFiles'] * 100 / $nbFiles);
+        }
+
+        return $stats;
     }
 }
