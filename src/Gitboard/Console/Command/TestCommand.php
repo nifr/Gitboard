@@ -6,12 +6,11 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class DefaultCommand extends Command
+class TestCommand extends Command
 {
     protected $target;
 
     protected $branch;
-
 
     protected function configure()
     {
@@ -32,10 +31,8 @@ class DefaultCommand extends Command
 
         $output->writeln($this->target . '\.git');
 
-
         // TODO add colspan/rowspan to table helper
         // @see https://github.com/symfony/symfony/blob/master/src/Symfony/Component/Console/Helper/TableHelper.php
-        
 
         $table
             /** defaults to TableHelper::LAYOUT_DEFAULT , LAYOUT_COMPACT */
@@ -63,7 +60,6 @@ class DefaultCommand extends Command
 
         $table->setHeaders(array())->setRows(array());
 
-
         // FORMATTER / SECTION
         // @see http://symfony.com/doc/current/components/console/helpers/formatterhelper.html
         $formatter = $this->getHelperSet()->get('formatter');
@@ -80,7 +76,6 @@ class DefaultCommand extends Command
         $formattedBlock = $formatter->formatBlock($errorMessages, 'question', true);
         $output->writeln($formattedBlock);
 
-
         $terminalDimensions = $this->getApplication()->getTerminalDimensions();
 
         $block = '';
@@ -95,7 +90,7 @@ class DefaultCommand extends Command
 
         // COLORs:
         // black, red, green, yellow, blue, magenta, cyan and white.
-        // OPTIONS: 
+        // OPTIONS:
         // bold, underscore, blink, reverse and conceal
         $output->writeln('<bg=yellow;options=reverse>foo</bg=yellow;options=reverse>');
 
@@ -136,10 +131,10 @@ class DefaultCommand extends Command
         // doesn't matter if / or \.git on cygwin
         $cmd = sprintf("git --git-dir=%s\.git branch | grep \* | sed 's/* //g'", $this->target);
         exec($cmd, $branch);
-        if(count($branch)==0)
-        {
+        if (count($branch)==0) {
             exit('No branch selected in ' . $this->target);
         }
+
         return $branch[0];
     }
 

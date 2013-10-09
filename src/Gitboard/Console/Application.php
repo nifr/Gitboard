@@ -7,7 +7,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Gitboard\Console\Command\DefaultCommand;
 
 /**
- * Gitboard base application. 
+ * Gitboard base application.
  *
  * @see http://symfony.com/doc/2.3/components/console/single_command_tool.html - Building a Single Command Application
  */
