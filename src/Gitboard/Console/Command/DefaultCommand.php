@@ -26,6 +26,18 @@ class DefaultCommand extends Command
 
     protected $options = array();
 
+    private static $logo = "   ____ _ _   _                         _ 
+  / ___(_) |_| |__   ___   __ _ _ __ __| |
+ | |  _| | __| '_ \ / _ \ / _` | '__/ _` |
+ | |_| | | |_| |_) | (_) | (_| | | | (_| |
+  \____|_|\__|_.__/ \___/ \__,_|_|  \__,_|
+                                          ";
+
+    public function getHelp()
+    {
+        return self::$logo . parent::getHelp();
+    }
+
     protected function configure()
     {
         $this
@@ -35,10 +47,6 @@ class DefaultCommand extends Command
             ->addOption('clear', null, InputOption::VALUE_OPTIONAL, 'Clear screen before output? (not available in cmd.exe)', 'true')
         ;
 
-        //$this->target = $_SERVER['PWD'];
-        $this->target = getcwd();
-
-        //
     }
 
     protected function importOptions()
@@ -76,11 +84,19 @@ class DefaultCommand extends Command
         }
     }
 
+    protected function intitialize(InputInterface $input, OutputInterface $output)
+    {
+
+    }
+
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        // make input/output accessible by local functions
+                // make input/output accessible by local functions
         $this->input = $input;
         $this->output = $output;
+
+        //$this->target = $_SERVER['PWD'];
+        $this->target = getcwd();
 
         $this->importOptions();
 

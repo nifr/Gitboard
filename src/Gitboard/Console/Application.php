@@ -54,4 +54,5 @@ class Application extends BaseApplication
 
         return $inputDefinition;
     }
+
 }
