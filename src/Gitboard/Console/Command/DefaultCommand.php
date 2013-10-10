@@ -11,7 +11,7 @@ use Symfony\Component\Console\Helper\TableHelper;
 // TODO include current state ( dirty / clean - files modified / deleted / created ) - git status --porcelain
 // TODO include option to show ignored files 
 // TODO include option to show deleted files
-// TODO
+// TODO create command to eval in bashrc
 class DefaultCommand extends Command
 {
     protected $target;
@@ -266,23 +266,21 @@ private static $logo = "  ____ _ _   _                         _
 
     protected function clearScreen()
     {
-        //passthru("tput clear");
-        //if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            // TODO warn on verbose that clearing screen is not supported
-        //}
+        // TODO any way to clear the screen from PHP CLI in cmd.exe/powershell?
+        if ( isset($_ENV["ComSpec"]) ) {
+            return;
+        } 
+
         if ($this->options['clear']) {
-        // TODO check for cygwin/msys
             passthru("tput clear");
         }
-
-        // TODO check wether this works on windows?
-        // ncurses_clear() ?
     }
 
     // TODO move to provider
     protected function getCommits($nbDays)
     {
         $separator = '°';
+        // TODO make date-format configurable
         $from = date('Y-m-d 00:00:00', strtotime(sprintf("-%s days", $nbDays - 1)));
 
         // TODO configurable git command
@@ -298,6 +296,7 @@ private static $logo = "  ____ _ _   _                         _
         $cmd = sprintf('git --git-dir=%s/.git log --no-color --no-merges --abbrev-commit --ignore-all-space --since="%s" --format="%%ct%s%%cr%s%%ce%s%%cn%s%%h%s%%s" --numstat 2>&1', $this->target, $from, $separator, $separator, $separator, $separator, $separator);
         //--format="%ci_%ce_%cn_%h__"
 
+        // TODO move to process execution method / use git provider
         if (OutputInterface::VERBOSITY_VERBOSE <= $this->output->getVerbosity()) {
             $this->output->writeln(
                 $this->formatter->formatSection('DEBUG','executing: ' . $cmd . PHP_EOL, 'info')
@@ -365,6 +364,7 @@ private static $logo = "  ____ _ _   _                         _
         $nbCommits = 0;
         $nbFiles = 0;
 
+        // TODO what if git user email is empty?
         foreach($commits as $commit)
         {
             if(!isset($stats[$commit['email']]))
