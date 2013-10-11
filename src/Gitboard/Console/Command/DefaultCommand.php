@@ -92,7 +92,7 @@ private static $logo = "  ____ _ _   _                         _
     {
         if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
             $output->writeln(
-                $this->getHelperSet()->get('formatter')->formatSection('DEBUG','Invoking ' . __FUNCTION__ . '()' . PHP_EOL, 'info')
+                $this->getHelperSet()->get('formatter')->formatSection('DEBUG','Invoking ' . __METHOD__ . '()' . PHP_EOL, 'info')
             );
         }
     }
@@ -101,7 +101,7 @@ private static $logo = "  ____ _ _   _                         _
     {
         if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
             $output->writeln(
-                $this->getHelperSet()->get('formatter')->formatSection('DEBUG','Invoking ' . __FUNCTION__ . '()' . PHP_EOL, 'info')
+                $this->getHelperSet()->get('formatter')->formatSection('DEBUG','Invoking ' . __METHOD__ . '()' . PHP_EOL, 'info')
             );
         }
     }
@@ -110,7 +110,7 @@ private static $logo = "  ____ _ _   _                         _
     {
         if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
             $output->writeln(
-                $this->getHelperSet()->get('formatter')->formatSection('DEBUG','Invoking ' . __FUNCTION__ . '()' . PHP_EOL, 'info')
+                $this->getHelperSet()->get('formatter')->formatSection('DEBUG','Invoking ' . __METHOD__ . '()' . PHP_EOL, 'info')
             );
         }
 
@@ -290,7 +290,7 @@ private static $logo = "  ____ _ _   _                         _
         // don't clear screen if verbose output 
         if (OutputInterface::VERBOSITY_VERBOSE <= $this->output->getVerbosity()) {
             $this->output->writeln(
-                $this->formatter->formatSection('DEBUG','Skipping ' . __FUNCTION__ . '()' . PHP_EOL, 'info')
+                $this->formatter->formatSection('DEBUG','Skipping ' . __METHOD__ . '()' . PHP_EOL, 'info')
             );
 
             return;
