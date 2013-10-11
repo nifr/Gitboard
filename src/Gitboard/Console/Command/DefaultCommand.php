@@ -53,6 +53,7 @@ private static $logo = "  ____ _ _   _                         _
             ->setDescription('Simple dashboard for a quick overview of Git projects.')
             ->addOption('relative', null, InputOption::VALUE_OPTIONAL, 'Output relative commit dates?', 'true')
             ->addOption('clear', null, InputOption::VALUE_OPTIONAL, 'Clear screen before output? (not available in cmd.exe)', 'true')
+            ->addOption('logo', null, InputOption::VALUE_OPTIONAL, 'Render the awesome ASCII logo?', 'true')
         ;
     }
 
@@ -70,6 +71,8 @@ private static $logo = "  ____ _ _   _                         _
 
         // CLEAR SCREEN
         $this->options['clear'] = filter_var($this->input->getOption('clear'), FILTER_VALIDATE_BOOLEAN);
+
+        $this->options['logo'] = filter_var($this->input->getOption('logo'), FILTER_VALIDATE_BOOLEAN);
     }
 
     // TODO return validation callback ?
@@ -141,6 +144,9 @@ private static $logo = "  ____ _ _   _                         _
 
     protected function renderLogo()
     {
+        if (!$this->options['logo']) {
+            return;
+        }
         $this->output->writeln(
             $this->formatter->formatBlock($this::$logo, 'fg=blue')
         );
