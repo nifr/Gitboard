@@ -129,6 +129,7 @@ class TestCommand extends Command
         ;
         $table->render($output);
 
+        $this->output->writeln('');
     }
 
     protected function getCurrentBranch()

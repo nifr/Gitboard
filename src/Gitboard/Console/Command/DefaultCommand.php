@@ -54,12 +54,10 @@ private static $logo = "  ____ _ _   _                         _
             ->addOption('relative', null, InputOption::VALUE_OPTIONAL, 'Output relative commit dates?', 'true')
             ->addOption('clear', null, InputOption::VALUE_OPTIONAL, 'Clear screen before output? (not available in cmd.exe)', 'true')
         ;
-
     }
 
     protected function importOptions()
     {
-
         // TERMINAL DIMENSIONS
         $terminalDimensions = $this->getApplication()->getTerminalDimensions();
         $this->options['terminal'] = array(
@@ -89,36 +87,50 @@ private static $logo = "  ____ _ _   _                         _
         }
     }
 
+    // TODO execution flow? initialize -> execute -> interact ?
     protected function intitialize(InputInterface $input, OutputInterface $output)
     {
+        if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
+            $output->writeln(
+                $this->getHelperSet()->get('formatter')->formatSection('DEBUG','Invoking ' . __FUNCTION__ . '()' . PHP_EOL, 'info')
+            );
+        }
+    }
 
+    protected function interact(InputInterface $input, OutputInterface $output)
+    {
+        if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
+            $output->writeln(
+                $this->getHelperSet()->get('formatter')->formatSection('DEBUG','Invoking ' . __FUNCTION__ . '()' . PHP_EOL, 'info')
+            );
+        }
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-                // make input/output accessible by local functions
+        if (OutputInterface::VERBOSITY_VERBOSE <= $output->getVerbosity()) {
+            $output->writeln(
+                $this->getHelperSet()->get('formatter')->formatSection('DEBUG','Invoking ' . __FUNCTION__ . '()' . PHP_EOL, 'info')
+            );
+        }
+
+        // make input/output accessible by local functions
         $this->input = $input;
         $this->output = $output;
 
         //$this->target = $_SERVER['PWD'];
         $this->target = getcwd();
-
         $this->importOptions();
 
-        // setup helpersets
         // TODO getHelper() - https://github.com/symfony/symfony/blob/master/src/Symfony/Component/Console/Command/Command.php
         $helperSet = $this->getHelperSet();
         $this->formatter = $helperSet->get('formatter');
         $this->table = $helperSet->get('table');
-
         // TOOD try/catch with exception
         $this->branch = $this->getCurrentBranch();
-
         // TODO make configurable
         $this->getCommits(40, $this->commits);
-
         $this->getStats($this->commits, $this->stats);
-
         // RENDERING
         $this->clearScreen();
         $this->renderLogo();
@@ -234,8 +246,12 @@ private static $logo = "  ____ _ _   _                         _
         // TODO move to function / use AOP for verbosity somehow?
         // http://symfony.com/doc/current/components/console/events.html#the-consoleevents-command-event
         if (OutputInterface::VERBOSITY_VERBOSE <= $this->output->getVerbosity()) {
+            $this->output->write(
+                $this->formatter->formatSection('DEBUG','Executing command: ' . PHP_EOL, 'info'),
+                false
+            );
             $this->output->writeln(
-                $this->formatter->formatSection('DEBUG','executing: ' . $cmd . PHP_EOL, 'info')
+                $this->formatter->formatSection('DEBUG', $cmd . PHP_EOL, 'info')
             );
         }
 
@@ -269,7 +285,16 @@ private static $logo = "  ____ _ _   _                         _
         // TODO any way to clear the screen from PHP CLI in cmd.exe/powershell?
         if ( isset($_ENV["ComSpec"]) ) {
             return;
-        } 
+        }
+
+        // don't clear screen if verbose output 
+        if (OutputInterface::VERBOSITY_VERBOSE <= $this->output->getVerbosity()) {
+            $this->output->writeln(
+                $this->formatter->formatSection('DEBUG','Skipping ' . __FUNCTION__ . '()' . PHP_EOL, 'info')
+            );
+
+            return;
+        }
 
         if ($this->options['clear']) {
             passthru("tput clear");
@@ -298,8 +323,12 @@ private static $logo = "  ____ _ _   _                         _
 
         // TODO move to process execution method / use git provider
         if (OutputInterface::VERBOSITY_VERBOSE <= $this->output->getVerbosity()) {
+            $this->output->write(
+                $this->formatter->formatSection('DEBUG','Executing command: ' . PHP_EOL, 'info'),
+                false
+            );
             $this->output->writeln(
-                $this->formatter->formatSection('DEBUG','executing: ' . $cmd . PHP_EOL, 'info')
+                $this->formatter->formatSection('DEBUG', $cmd . PHP_EOL, 'info')
             );
         }
 
